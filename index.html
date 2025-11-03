@@ -3,25 +3,25 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-  <title>IAB Intent → Chrome Test</title>
+  <title>IAB Intent → Chrome Google Test</title>
   <style>
-    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; padding: 16px; }
+    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; padding: 16px; line-height: 1.5; }
     a.btn { display:inline-block; padding:12px 16px; margin:8px 0; border:1px solid #ccc; border-radius:10px; text-decoration:none; }
     .box { border:1px dashed #aaa; padding:12px; margin-top:20px; border-radius:10px; }
   </style>
 </head>
 <body>
-  <h1>Instagram IAB → Chrome 앱 열기 테스트</h1>
-  <p>아래 버튼을 클릭하면 <b>Chrome 앱</b>이 열리고 <b>google.com</b>이 뜨는지 확인해보세요.</p>
+  <h1>Instagram IAB → Chrome 앱으로 Google 열기 테스트</h1>
+  <p>아래 버튼을 눌러 <b>Chrome 앱</b>이 실제로 열리고, <b>https://www.google.com</b>이 표시되는지 확인하세요.</p>
 
   <a class="btn" id="btn-bad" href="#">
-    ❌ 상대경로 버전 (intent://./google)
+    ❌ 상대경로 버전 (intent://./google.com)
   </a><br>
   <a class="btn" id="btn-good1" href="#">
-    ✅ 올바른 버전 (intent://google)
+    ✅ 올바른 버전 (intent://google.com)
   </a><br>
   <a class="btn" id="btn-good2" href="#">
-    ✅ Host 명시 버전 (intent://testhost/google)
+    ✅ Host 명시 버전 (intent://testhost/google.com)
   </a>
 
   <div class="box" id="result">대기 중...</div>
@@ -31,7 +31,6 @@
     let nav = false;
     function log(msg){ result.textContent = msg; console.log(msg); }
 
-    // 이동 감지 (인앱 브라우저에서는 이 이벤트로 “무언가 열렸는지” 추적 가능)
     ['visibilitychange','pagehide','blur','beforeunload'].forEach(e => {
       window.addEventListener(e, () => { nav = true; log(`탐지 이벤트: ${e} → 외부 이동 추정`); }, {once:true});
     });
@@ -43,12 +42,12 @@
       location.href = uri;
     }
 
-    // intent URI들
-    const bad = 'intent://./google#Intent;scheme=https;package=com.android.chrome;S.browser_fallback_url=https%3A%2F%2Fwww.google.com;end';
-    const good1 = 'intent://google#Intent;scheme=https;package=com.android.chrome;S.browser_fallback_url=https%3A%2F%2Fwww.google.com;end';
-    const good2 = 'intent://testhost/google#Intent;scheme=https;package=com.android.chrome;S.browser_fallback_url=https%3A%2F%2Fwww.google.com;end';
+    // intent URI 구성: Chrome 패키지 + 구글 페이지 지정
+    const bad   = 'intent://./google.com#Intent;scheme=https;package=com.android.chrome;S.browser_fallback_url=https%3A%2F%2Fwww.google.com;end';
+    const good1 = 'intent://google.com#Intent;scheme=https;package=com.android.chrome;S.browser_fallback_url=https%3A%2F%2Fwww.google.com;end';
+    const good2 = 'intent://testhost/google.com#Intent;scheme=https;package=com.android.chrome;S.browser_fallback_url=https%3A%2F%2Fwww.google.com;end';
 
-    document.getElementById('btn-bad').onclick = e => { e.preventDefault(); tryIntent(bad); };
+    document.getElementById('btn-bad').onclick   = e => { e.preventDefault(); tryIntent(bad); };
     document.getElementById('btn-good1').onclick = e => { e.preventDefault(); tryIntent(good1); };
     document.getElementById('btn-good2').onclick = e => { e.preventDefault(); tryIntent(good2); };
   </script>
