@@ -3,86 +3,54 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-  <title>IAB Intent Test</title>
+  <title>IAB Intent → Chrome Test</title>
   <style>
-    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; padding: 16px; line-height: 1.4; }
-    a.btn { display:inline-block;padding:12px 14px;margin:6px 0;border:1px solid #ccc;border-radius:10px;text-decoration:none }
-    .box { padding:10px;border:1px dashed #aaa;border-radius:10px;margin-top:12px; }
-    code { background:#f6f6f6;padding:2px 4px;border-radius:6px }
+    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; padding: 16px; }
+    a.btn { display:inline-block; padding:12px 16px; margin:8px 0; border:1px solid #ccc; border-radius:10px; text-decoration:none; }
+    .box { border:1px dashed #aaa; padding:12px; margin-top:20px; border-radius:10px; }
   </style>
 </head>
 <body>
-  <h1>Instagram IAB Intent 테스트</h1>
+  <h1>Instagram IAB → Chrome 앱 열기 테스트</h1>
+  <p>아래 버튼을 클릭하면 <b>Chrome 앱</b>이 열리고 <b>google.com</b>이 뜨는지 확인해보세요.</p>
 
-  <div class="box" id="env"></div>
+  <a class="btn" id="btn-bad" href="#">
+    ❌ 상대경로 버전 (intent://./google)
+  </a><br>
+  <a class="btn" id="btn-good1" href="#">
+    ✅ 올바른 버전 (intent://google)
+  </a><br>
+  <a class="btn" id="btn-good2" href="#">
+    ✅ Host 명시 버전 (intent://testhost/google)
+  </a>
 
-  <h2>1) 상대경로 포함 (의도적으로 문제 케이스)</h2>
-  <a class="btn" id="btn-bad" href="#">intent://./marketProduct#Intent;scheme=myapp;package=com.example.app;S.browser_fallback_url=https%3A%2F%2Fexample.com%2Ffallback-bad;end</a>
-
-  <h2>2) 상대기호 제거 (권장 #1: HOST 없이 PATH만)</h2>
-  <a class="btn" id="btn-good1" href="#">intent://marketProduct#Intent;scheme=myapp;package=com.example.app;S.browser_fallback_url=https%3A%2F%2Fexample.com%2Ffallback-good1;end</a>
-
-  <h2>3) 정상 HOST 명시 (권장 #2: HOST + PATH)</h2>
-  <a class="btn" id="btn-good2" href="#">intent://app.example.com/marketProduct#Intent;scheme=myapp;package=com.example.app;S.browser_fallback_url=https%3A%2F%2Fexample.com%2Ffallback-good2;end</a>
-
-  <h2>4) App Links (https, OS 표준)</h2>
-  <a class="btn" id="btn-applinks" href="https://app.example.com/marketProduct?from=iab-test">https://app.example.com/marketProduct</a>
-
-  <div class="box">
-    <strong>클릭 후 판별 로직</strong>
-    <ul>
-      <li>페이지가 <code>visibilitychange/pagehide/blur</code>로 벗어나면 → “<em>무언가 열렸음</em>”으로 추정</li>
-      <li>3초 내 아무 변화 없으면 → IAB가 호출을 <em>무시/차단</em>했을 가능성</li>
-    </ul>
-    <div id="result">대기 중…</div>
-  </div>
+  <div class="box" id="result">대기 중...</div>
 
   <script>
-    // (선택) 인앱 콘솔: ?debug=1 붙여 열면 미니 콘솔 활성화
-    if (location.search.includes('debug=1')) {
-      var s = document.createElement('script'); s.src='https://cdn.jsdelivr.net/npm/eruda'; 
-      s.onload = function(){ eruda.init(); console.log('[eruda] enabled'); };
-      document.head.appendChild(s);
-    }
-
-    const env = document.getElementById('env');
-    env.innerHTML = [
-      '<b>User-Agent</b>: ' + navigator.userAgent,
-      '<b>IAB 추정</b>: ' + (/Instagram|FBAN|FBAV/i.test(navigator.userAgent) ? '예 (IG/FB 계열 가능)' : '아님/불명'),
-    ].join('<br/>');
-
     const result = document.getElementById('result');
-    let navigationHappened = false;
-    function mark(msg){ result.textContent = msg; console.log('[IAB-TEST]', msg); }
+    let nav = false;
+    function log(msg){ result.textContent = msg; console.log(msg); }
 
-    ['visibilitychange','pagehide','blur','beforeunload'].forEach(evt=>{
-      window.addEventListener(evt, ()=>{
-        navigationHappened = true;
-        mark('탐지 이벤트: ' + evt + ' → 네이티브/외부 이동 또는 페이지 이탈 추정');
-      }, { once: true });
+    // 이동 감지 (인앱 브라우저에서는 이 이벤트로 “무언가 열렸는지” 추적 가능)
+    ['visibilitychange','pagehide','blur','beforeunload'].forEach(e => {
+      window.addEventListener(e, () => { nav = true; log(`탐지 이벤트: ${e} → 외부 이동 추정`); }, {once:true});
     });
 
-    function testClick(uri) {
-      navigationHappened = false;
-      mark('시도 중: ' + uri);
-      // 3초 후에도 변화 없으면 실패 추정
-      setTimeout(()=>{
-        if(!navigationHappened) mark('3초 경과: 변화 없음 → IAB가 호출을 무시/차단했을 가능성 높음');
-      }, 3000);
-      try { location.href = uri; } catch (e) {
-        mark('예외 발생: ' + e.message);
-      }
+    function tryIntent(uri){
+      nav = false;
+      log(`시도 중: ${uri}`);
+      setTimeout(()=>{ if(!nav) log('3초 경과: 변화 없음 → IAB가 intent 차단한 듯'); }, 3000);
+      location.href = uri;
     }
 
-    // 버튼 핸들링
-    const bad = 'intent://./marketProduct#Intent;scheme=myapp;package=com.example.app;S.browser_fallback_url=https%3A%2F%2Fexample.com%2Ffallback-bad;end';
-    const good1 = 'intent://marketProduct#Intent;scheme=myapp;package=com.example.app;S.browser_fallback_url=https%3A%2F%2Fexample.com%2Ffallback-good1;end';
-    const good2 = 'intent://app.example.com/marketProduct#Intent;scheme=myapp;package=com.example.app;S.browser_fallback_url=https%3A%2F%2Fexample.com%2Ffallback-good2;end';
+    // intent URI들
+    const bad = 'intent://./google#Intent;scheme=https;package=com.android.chrome;S.browser_fallback_url=https%3A%2F%2Fwww.google.com;end';
+    const good1 = 'intent://google#Intent;scheme=https;package=com.android.chrome;S.browser_fallback_url=https%3A%2F%2Fwww.google.com;end';
+    const good2 = 'intent://testhost/google#Intent;scheme=https;package=com.android.chrome;S.browser_fallback_url=https%3A%2F%2Fwww.google.com;end';
 
-    document.getElementById('btn-bad').addEventListener('click', (e)=>{ e.preventDefault(); testClick(bad); });
-    document.getElementById('btn-good1').addEventListener('click', (e)=>{ e.preventDefault(); testClick(good1); });
-    document.getElementById('btn-good2').addEventListener('click', (e)=>{ e.preventDefault(); testClick(good2); });
-    // App Links는 JS 강제 이동 대신 기본 a태그로 두어 실제 동작을 보자
+    document.getElementById('btn-bad').onclick = e => { e.preventDefault(); tryIntent(bad); };
+    document.getElementById('btn-good1').onclick = e => { e.preventDefault(); tryIntent(good1); };
+    document.getElementById('btn-good2').onclick = e => { e.preventDefault(); tryIntent(good2); };
   </script>
 </body>
 </html>
